@@ -7,36 +7,43 @@
 
 <style>
 body {
-    font-family: Arial, sans-serif;
-    text-align: center;
-    background: linear-gradient(135deg, #4e73df, #1cc88a);
-    color: white;
-    padding: 20px;
+  font-family: Arial, sans-serif;
+  background: linear-gradient(135deg, #4e73df, #1cc88a);
+  color: white;
+  text-align: center;
+  padding: 20px;
 }
 
 .container {
-    background: rgba(0,0,0,0.3);
-    padding: 20px;
-    border-radius: 15px;
+  background: rgba(0,0,0,0.3);
+  padding: 20px;
+  border-radius: 15px;
+  max-width: 600px;
+  margin: auto;
+}
+
+.status {
+  display: flex;
+  justify-content: space-around;
+  margin-bottom: 15px;
+  font-weight: bold;
+}
+
+select, button {
+  padding: 10px;
+  font-size: 16px;
+  border-radius: 8px;
+  margin: 5px;
 }
 
 button {
-    padding: 15px 30px;
-    font-size: 18px;
-    border: none;
-    border-radius: 10px;
-    cursor: pointer;
-    margin-top: 20px;
+  border: none;
+  cursor: pointer;
 }
 
-#micBtn {
-    background: #f6c23e;
-}
+#micBtn { background: #f6c23e; }
 
-.result {
-    margin-top: 20px;
-    font-size: 18px;
-}
+.result { margin-top: 15px; }
 </style>
 </head>
 
@@ -46,194 +53,164 @@ button {
 
 <div class="container">
 
-<h2>Repite esta frase:</h2>
-<p id="targetSentence">I like to learn English every day</p>
+<!-- 🔹 ESTADO DEL JUGADOR -->
+<div class="status">
+  <div>❤️ Vidas: <span id="lives"></span></div>
+  <div>🔥 Racha: <span id="streak"></span></div>
+  <div>⭐ Puntaje: <span id="points"></span></div>
+</div>
 
-<button id="micBtn">🎤 Hablar</button>
+<div><strong>Nivel:</strong> <span id="levelText"></span></div>
 
-<div class="result">
-<p><strong>Tú dijiste:</strong></p>
-<p id="spokenText"></p>
-
-<p><strong>Puntuación:</strong></p>
-<p id="score"></p>
-<p id="feedback" style="font-size:1.2em; font-weight:bold;"></p>
-<div id="comparison"></div>
-
-<button onclick="retry()">🔁 Intentar otra vez</button>
-<button onclick="nextPhrase()">➡️ Siguiente frase</button>
-
+<!-- 🔹 MENÚS -->
 <select id="languageSelect">
   <option value="en-US">🇺🇸 Inglés</option>
   <option value="fr-FR">🇫🇷 Francés</option>
   <option value="de-DE">🇩🇪 Alemán</option>
+  <option value="it-IT">🇮🇹 Italiano</option>
+  <option value="ru-RU">🇷🇺 Ruso</option>
 </select>
+
+<select id="difficultySelect">
+  <option value="easy">🟢 Fácil</option>
+  <option value="medium">🟡 Medio</option>
+  <option value="hard">🔴 Difícil</option>
+</select>
+
+<hr>
+
+<h2>Repite la frase:</h2>
+<p id="targetSentence"></p>
+
+<button id="micBtn">🎤 Hablar</button>
+
+<div class="result">
+  <p><strong>Dijiste:</strong> <span id="spokenText"></span></p>
+  <p><strong>Puntuación:</strong> <span id="score"></span></p>
+  <p id="feedback"></p>
 </div>
+
+<button onclick="nextPhrase()">➡️ Siguiente</button>
+<button onclick="retry()">🔁 Reintentar</button>
 
 </div>
 
 <script>
-/* =====================
-   🔹 CONFIGURACIÓN JUEGO
-===================== */
-
-const levels = {
-  1: ["I like apples", "Good morning"],
-  2: ["Practice makes perfect", "Learning languages is fun"],
-  3: ["I like to learn English every day"]
+/* 🔹 FRASES POR IDIOMA Y DIFICULTAD */
+const phrases = {
+  "en-US": {
+    easy: ["I like apples", "Good morning"],
+    medium: ["Practice makes perfect"],
+    hard: ["I like to learn English every day"]
+  },
+  "fr-FR": {
+    easy: ["Bonjour", "J'aime les pommes"],
+    medium: ["La pratique rend parfait"],
+    hard: ["J'aime apprendre le français chaque jour"]
+  },
+  "de-DE": {
+    easy: ["Guten Morgen", "Ich mag Äpfel"],
+    medium: ["Übung macht den Meister"],
+    hard: ["Ich lerne jeden Tag Deutsch"]
+  },
+  "it-IT": {
+    easy: ["Buongiorno", "Mi piacciono le mele"],
+    medium: ["La pratica rende perfetti"],
+    hard: ["Mi piace imparare l'italiano ogni giorno"]
+  },
+  "ru-RU": {
+    easy: ["Доброе утро", "Я люблю яблоки"],
+    medium: ["Практика делает идеальным"],
+    hard: ["Мне нравится учить русский каждый день"]
+  }
 };
 
-let userData = JSON.parse(localStorage.getItem("speakmasterUser")) || {
-  level: 1,
+/* 🔹 ESTADO */
+let user = {
   lives: 3,
   streak: 0,
-  score: 0
+  points: 0,
+  level: "easy"
 };
 
-let phraseIndex = 0;
+let index = 0;
 
-/* =====================
-   🔹 ELEMENTOS DOM
-===================== */
+/* 🔹 ELEMENTOS */
+const target = document.getElementById("targetSentence");
+const spoken = document.getElementById("spokenText");
+const scoreEl = document.getElementById("score");
+const feedback = document.getElementById("feedback");
 
-const spokenText = document.getElementById("spokenText");
-const scoreText = document.getElementById("score");
-const targetSentenceEl = document.getElementById("targetSentence");
-const languageSelect = document.getElementById("languageSelect");
+const langSel = document.getElementById("languageSelect");
+const diffSel = document.getElementById("difficultySelect");
 
-/* =====================
-   🔹 SPEECH API
-===================== */
-
+/* 🔹 SPEECH */
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 const recognition = new SpeechRecognition();
 
 document.getElementById("micBtn").onclick = () => {
-  recognition.lang = languageSelect.value;
+  recognition.lang = langSel.value;
   recognition.start();
 };
 
-recognition.onresult = function(event) {
-  const userSpeech = event.results[0][0].transcript.toLowerCase();
-  const targetSentence = targetSentenceEl.innerText.toLowerCase();
+recognition.onresult = e => {
+  const said = e.results[0][0].transcript.toLowerCase();
+  const expected = target.innerText.toLowerCase();
 
-  spokenText.innerText = userSpeech;
+  spoken.innerText = said;
 
-  let score = calculateSimilarity(targetSentence, userSpeech);
-  scoreText.innerText = score + "%";
+  let score = similarity(expected, said);
+  scoreEl.innerText = score + "%";
 
-  handleGameLogic(score);
-  showFeedback(score);
-  compareText(targetSentence, userSpeech);
-  saveProgress();
-};
-
-/* =====================
-   🔹 LÓGICA DEL JUEGO
-===================== */
-
-function handleGameLogic(score) {
   if (score >= 70) {
-    userData.streak++;
-    userData.score += score;
-
-    if (userData.streak === 3) {
-      userData.level++;
-      userData.streak = 0;
-      alert("🔥 ¡Racha! Subes a nivel " + userData.level);
-      phraseIndex = 0;
-    }
+    user.streak++;
+    user.points += score;
+    feedback.innerText = "✅ Bien hecho";
   } else {
-    userData.lives--;
-    userData.streak = 0;
-
-    if (userData.lives === 0) {
-      alert("💔 Te quedaste sin vidas. Reiniciando nivel.");
-      userData.lives = 3;
-      phraseIndex = 0;
-    }
+    user.lives--;
+    user.streak = 0;
+    feedback.innerText = "❌ Intenta otra vez";
   }
+
+  updateUI();
+};
+
+/* 🔹 FUNCIONES */
+function similarity(a,b){
+  let aw=a.split(" "), bw=b.split(" "), c=0;
+  aw.forEach(w=>{ if(bw.includes(w)) c++; });
+  return Math.round(c/aw.length*100);
 }
 
-/* =====================
-   🔹 UTILIDADES
-===================== */
-
-function calculateSimilarity(str1, str2) {
-  let words1 = str1.split(" ");
-  let words2 = str2.split(" ");
-  let correct = 0;
-
-  words1.forEach(word => {
-    if (words2.includes(word)) correct++;
-  });
-
-  return Math.round((correct / words1.length) * 100);
+function loadPhrase(){
+  const list = phrases[langSel.value][diffSel.value];
+  target.innerText = list[index % list.length];
 }
 
-function showFeedback(score) {
-  const feedback = document.getElementById("feedback");
-
-  if (score >= 90) {
-    feedback.textContent = "✅ Excelente pronunciación";
-    feedback.style.color = "lime";
-  } else if (score >= 70) {
-    feedback.textContent = "⚠️ Casi perfecto, revisa algunas palabras";
-    feedback.style.color = "orange";
-  } else {
-    feedback.textContent = "❌ Intenta de nuevo";
-    feedback.style.color = "red";
-  }
+function nextPhrase(){
+  index++;
+  loadPhrase();
 }
 
-function compareText(expected, spoken) {
-  const expWords = expected.split(" ");
-  const spkWords = spoken.split(" ");
-
-  let html = "";
-
-  expWords.forEach((word, i) => {
-    if (spkWords[i] === word) {
-      html += `<span style="color:lime">🟢 ${word}</span> `;
-    } else {
-      html += `<span style="color:red">🔴 ${word}</span> `;
-    }
-  });
-
-  document.getElementById("comparison").innerHTML = html;
+function retry(){
+  spoken.innerText="";
+  scoreEl.innerText="";
+  feedback.innerText="";
 }
 
-/* =====================
-   🔹 CONTROL FRASES
-===================== */
-
-function nextPhrase() {
-  const currentLevelPhrases = levels[userData.level] || levels[1];
-  phraseIndex = (phraseIndex + 1) % currentLevelPhrases.length;
-  targetSentenceEl.innerText = currentLevelPhrases[phraseIndex];
+function updateUI(){
+  document.getElementById("lives").innerText = user.lives;
+  document.getElementById("streak").innerText = user.streak;
+  document.getElementById("points").innerText = user.points;
+  document.getElementById("levelText").innerText = diffSel.options[diffSel.selectedIndex].text;
 }
 
-function retry() {
-  spokenText.innerText = "";
-  scoreText.innerText = "";
-  document.getElementById("feedback").innerText = "";
-  document.getElementById("comparison").innerHTML = "";
-  recognition.start();
-}
+/* 🔹 EVENTOS */
+langSel.onchange = () => { index=0; loadPhrase(); };
+diffSel.onchange = () => { index=0; loadPhrase(); };
 
-/* =====================
-   🔹 GUARDADO
-===================== */
-
-function saveProgress() {
-  localStorage.setItem("speakmasterUser", JSON.stringify(userData));
-}
-
-/* =====================
-   🔹 INIT
-===================== */
-
-targetSentenceEl.innerText = levels[userData.level][phraseIndex];
+updateUI();
+loadPhrase();
 </script>
 
 </body>
