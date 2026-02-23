@@ -25,7 +25,7 @@ body {
 .status {
   display: flex;
   justify-content: space-around;
-  margin-bottom: 15px;
+  margin-bottom: 10px;
   font-weight: bold;
 }
 
@@ -41,9 +41,13 @@ button {
   cursor: pointer;
 }
 
-#micBtn { background: #f6c23e; }
+#micBtn {
+  background: #f6c23e;
+}
 
-.result { margin-top: 15px; }
+.result {
+  margin-top: 15px;
+}
 </style>
 </head>
 
@@ -51,16 +55,22 @@ button {
 
 <h1>🎤 SpeakMaster AI</h1>
 
+<!-- 🐼 MASCOTA -->
+<img id="mascot"
+     src="img/Copilot1.png"
+     style="width:120px; margin:15px auto; display:block;"
+     alt="Emoji">
+
 <div class="container">
 
-<!-- 🔹 ESTADO DEL JUGADOR -->
+<!-- 🔹 ESTADO -->
 <div class="status">
-  <div>❤️ Vidas: <span id="lives"></span></div>
-  <div>🔥 Racha: <span id="streak"></span></div>
-  <div>⭐ Puntaje: <span id="points"></span></div>
+  <div>❤️ Vidas: <span id="lives">3</span></div>
+  <div>🔥 Racha: <span id="streak">0</span></div>
+  <div>⭐ Puntaje: <span id="points">0</span></div>
 </div>
 
-<div><strong>Nivel:</strong> <span id="levelText"></span></div>
+<div><strong>Nivel:</strong> <span id="levelText">🟢 Fácil</span></div>
 
 <!-- 🔹 MENÚS -->
 <select id="languageSelect">
@@ -96,7 +106,7 @@ button {
 </div>
 
 <script>
-/* 🔹 FRASES POR IDIOMA Y DIFICULTAD */
+/* 🔹 FRASES */
 const phrases = {
   "en-US": {
     easy: ["I like apples", "Good morning"],
@@ -125,12 +135,11 @@ const phrases = {
   }
 };
 
-/* 🔹 ESTADO */
+/* 🔹 ESTADO USUARIO */
 let user = {
   lives: 3,
   streak: 0,
-  points: 0,
-  level: "easy"
+  points: 0
 };
 
 let index = 0;
@@ -140,6 +149,7 @@ const target = document.getElementById("targetSentence");
 const spoken = document.getElementById("spokenText");
 const scoreEl = document.getElementById("score");
 const feedback = document.getElementById("feedback");
+const mascot = document.getElementById("mascot");
 
 const langSel = document.getElementById("languageSelect");
 const diffSel = document.getElementById("difficultySelect");
@@ -165,13 +175,13 @@ recognition.onresult = e => {
   if (score >= 70) {
     user.streak++;
     user.points += score;
-    feedback.innerText = "✅ Bien hecho";
   } else {
     user.lives--;
     user.streak = 0;
-    feedback.innerText = "❌ Intenta otra vez";
   }
 
+  unlockLevel();
+  showFeedback(score);
   updateUI();
 };
 
@@ -202,7 +212,36 @@ function updateUI(){
   document.getElementById("lives").innerText = user.lives;
   document.getElementById("streak").innerText = user.streak;
   document.getElementById("points").innerText = user.points;
-  document.getElementById("levelText").innerText = diffSel.options[diffSel.selectedIndex].text;
+  document.getElementById("levelText").innerText =
+    diffSel.options[diffSel.selectedIndex].text;
+}
+
+function unlockLevel(){
+  if (user.streak === 3) {
+    if (diffSel.value === "easy") diffSel.value = "medium";
+    else if (diffSel.value === "medium") diffSel.value = "hard";
+    user.streak = 0;
+    index = 0;
+    loadPhrase();
+    alert("🔥 ¡Nivel desbloqueado!");
+  }
+}
+
+/* 🐼 FEEDBACK + MASCOTA */
+function showFeedback(score) {
+  if (score >= 90) {
+    feedback.textContent = "✅ Excelente pronunciación";
+    feedback.style.color = "lime";
+    mascot.src = "img/emojihappy.png";
+  } else if (score >= 70) {
+    feedback.textContent = "⚠️ Casi perfecto";
+    feedback.style.color = "orange";
+    mascot.src = "img/emojinormal.png";
+  } else {
+    feedback.textContent = "❌ Intenta de nuevo";
+    feedback.style.color = "red";
+    mascot.src = "img/emojisad.png";
+  }
 }
 
 /* 🔹 EVENTOS */
