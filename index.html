@@ -1,102 +1,91 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SpeakMaster AI</title>
-
-<style>
-body {
-    font-family: Arial, sans-serif;
-    text-align: center;
-    background: linear-gradient(135deg, #4e73df, #1cc88a);
-    color: white;
-    padding: 20px;
-}
-
-.container {
-    background: rgba(0,0,0,0.3);
-    padding: 20px;
-    border-radius: 15px;
-}
-
-button {
-    padding: 15px 30px;
-    font-size: 18px;
-    border: none;
-    border-radius: 10px;
-    cursor: pointer;
-    margin-top: 20px;
-}
-
-#micBtn {
-    background: #f6c23e;
-}
-
-.result {
-    margin-top: 20px;
-    font-size: 18px;
-}
-</style>
-</head>
-
-<body>
-
-<h1>🎤 SpeakMaster AI</h1>
-
-<div class="container">
-
-<h2>Repite esta frase:</h2>
-<p id="targetSentence">I like to learn English every day</p>
-
-<button id="micBtn">🎤 Hablar</button>
-
-<div class="result">
-<p><strong>Tú dijiste:</strong></p>
-<p id="spokenText"></p>
-
-<p><strong>Puntuación:</strong></p>
-<p id="score"></p>
-</div>
-
-</div>
-
 <script>
-const targetSentence = document.getElementById("targetSentence").innerText.toLowerCase();
 const spokenText = document.getElementById("spokenText");
 const scoreText = document.getElementById("score");
+const targetSentenceEl = document.getElementById("targetSentence");
+const languageSelect = document.getElementById("languageSelect");
+
+let phraseIndex = 0;
+const phrases = [
+  "I like to learn English every day",
+  "Practice makes perfect",
+  "Learning languages is fun"
+];
 
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 const recognition = new SpeechRecognition();
 
-recognition.lang = "en-US";
-
 document.getElementById("micBtn").onclick = () => {
-    recognition.start();
+  recognition.lang = languageSelect.value; // 🌍 idioma dinámico
+  recognition.start();
 };
 
 recognition.onresult = function(event) {
-    const userSpeech = event.results[0][0].transcript.toLowerCase();
-    spokenText.innerText = userSpeech;
+  const userSpeech = event.results[0][0].transcript.toLowerCase();
+  const targetSentence = targetSentenceEl.innerText.toLowerCase();
 
-    let score = calculateSimilarity(targetSentence, userSpeech);
-    scoreText.innerText = score + "%";
+  spokenText.innerText = userSpeech;
+
+  let score = calculateSimilarity(targetSentence, userSpeech);
+  scoreText.innerText = score + "%";
+
+  showFeedback(score);
+  compareText(targetSentence, userSpeech);
 };
 
 function calculateSimilarity(str1, str2) {
-    let words1 = str1.split(" ");
-    let words2 = str2.split(" ");
-    let correct = 0;
+  let words1 = str1.split(" ");
+  let words2 = str2.split(" ");
+  let correct = 0;
 
-    words1.forEach(word => {
-        if (words2.includes(word)) {
-            correct++;
-        }
-    });
+  words1.forEach(word => {
+    if (words2.includes(word)) correct++;
+  });
 
-    return Math.round((correct / words1.length) * 100);
+  return Math.round((correct / words1.length) * 100);
+}
+
+function showFeedback(score) {
+  const feedback = document.getElementById("feedback");
+
+  if (score >= 90) {
+    feedback.textContent = "✅ Excelente pronunciación";
+    feedback.style.color = "lime";
+  } else if (score >= 70) {
+    feedback.textContent = "⚠️ Casi perfecto, revisa algunas palabras";
+    feedback.style.color = "orange";
+  } else {
+    feedback.textContent = "❌ Intenta de nuevo";
+    feedback.style.color = "red";
+  }
+}
+
+function compareText(expected, spoken) {
+  const expWords = expected.split(" ");
+  const spkWords = spoken.split(" ");
+
+  let html = "";
+
+  expWords.forEach((word, i) => {
+    if (spkWords[i] === word) {
+      html += `<span style="color:lime">🟢 ${word}</span> `;
+    } else {
+      html += `<span style="color:red">🔴 ${word}</span> `;
+    }
+  });
+
+  document.getElementById("comparison").innerHTML = html;
+}
+
+function retry() {
+  spokenText.innerText = "";
+  scoreText.innerText = "";
+  document.getElementById("feedback").innerText = "";
+  document.getElementById("comparison").innerHTML = "";
+  recognition.start();
+}
+
+function nextPhrase() {
+  phraseIndex = (phraseIndex + 1) % phrases.length;
+  targetSentenceEl.innerText = phrases[phraseIndex];
 }
 </script>
-
-</body>
-</html>
