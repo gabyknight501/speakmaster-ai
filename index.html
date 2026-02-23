@@ -73,23 +73,43 @@ button {
 </div>
 
 <script>
+/* =====================
+   🔹 CONFIGURACIÓN JUEGO
+===================== */
+
+const levels = {
+  1: ["I like apples", "Good morning"],
+  2: ["Practice makes perfect", "Learning languages is fun"],
+  3: ["I like to learn English every day"]
+};
+
+let userData = JSON.parse(localStorage.getItem("speakmasterUser")) || {
+  level: 1,
+  lives: 3,
+  streak: 0,
+  score: 0
+};
+
+let phraseIndex = 0;
+
+/* =====================
+   🔹 ELEMENTOS DOM
+===================== */
+
 const spokenText = document.getElementById("spokenText");
 const scoreText = document.getElementById("score");
 const targetSentenceEl = document.getElementById("targetSentence");
 const languageSelect = document.getElementById("languageSelect");
 
-let phraseIndex = 0;
-const phrases = [
-  "I like to learn English every day",
-  "Practice makes perfect",
-  "Learning languages is fun"
-];
+/* =====================
+   🔹 SPEECH API
+===================== */
 
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 const recognition = new SpeechRecognition();
 
 document.getElementById("micBtn").onclick = () => {
-  recognition.lang = languageSelect.value; // 🌍 idioma dinámico
+  recognition.lang = languageSelect.value;
   recognition.start();
 };
 
@@ -102,9 +122,42 @@ recognition.onresult = function(event) {
   let score = calculateSimilarity(targetSentence, userSpeech);
   scoreText.innerText = score + "%";
 
+  handleGameLogic(score);
   showFeedback(score);
   compareText(targetSentence, userSpeech);
+  saveProgress();
 };
+
+/* =====================
+   🔹 LÓGICA DEL JUEGO
+===================== */
+
+function handleGameLogic(score) {
+  if (score >= 70) {
+    userData.streak++;
+    userData.score += score;
+
+    if (userData.streak === 3) {
+      userData.level++;
+      userData.streak = 0;
+      alert("🔥 ¡Racha! Subes a nivel " + userData.level);
+      phraseIndex = 0;
+    }
+  } else {
+    userData.lives--;
+    userData.streak = 0;
+
+    if (userData.lives === 0) {
+      alert("💔 Te quedaste sin vidas. Reiniciando nivel.");
+      userData.lives = 3;
+      phraseIndex = 0;
+    }
+  }
+}
+
+/* =====================
+   🔹 UTILIDADES
+===================== */
 
 function calculateSimilarity(str1, str2) {
   let words1 = str1.split(" ");
@@ -150,6 +203,16 @@ function compareText(expected, spoken) {
   document.getElementById("comparison").innerHTML = html;
 }
 
+/* =====================
+   🔹 CONTROL FRASES
+===================== */
+
+function nextPhrase() {
+  const currentLevelPhrases = levels[userData.level] || levels[1];
+  phraseIndex = (phraseIndex + 1) % currentLevelPhrases.length;
+  targetSentenceEl.innerText = currentLevelPhrases[phraseIndex];
+}
+
 function retry() {
   spokenText.innerText = "";
   scoreText.innerText = "";
@@ -158,10 +221,19 @@ function retry() {
   recognition.start();
 }
 
-function nextPhrase() {
-  phraseIndex = (phraseIndex + 1) % phrases.length;
-  targetSentenceEl.innerText = phrases[phraseIndex];
+/* =====================
+   🔹 GUARDADO
+===================== */
+
+function saveProgress() {
+  localStorage.setItem("speakmasterUser", JSON.stringify(userData));
 }
+
+/* =====================
+   🔹 INIT
+===================== */
+
+targetSentenceEl.innerText = levels[userData.level][phraseIndex];
 </script>
 
 </body>
