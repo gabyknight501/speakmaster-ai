@@ -1,3 +1,77 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SpeakMaster AI</title>
+
+<style>
+body {
+    font-family: Arial, sans-serif;
+    text-align: center;
+    background: linear-gradient(135deg, #4e73df, #1cc88a);
+    color: white;
+    padding: 20px;
+}
+
+.container {
+    background: rgba(0,0,0,0.3);
+    padding: 20px;
+    border-radius: 15px;
+}
+
+button {
+    padding: 15px 30px;
+    font-size: 18px;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    margin-top: 20px;
+}
+
+#micBtn {
+    background: #f6c23e;
+}
+
+.result {
+    margin-top: 20px;
+    font-size: 18px;
+}
+</style>
+</head>
+
+<body>
+
+<h1>🎤 SpeakMaster AI</h1>
+
+<div class="container">
+
+<h2>Repite esta frase:</h2>
+<p id="targetSentence">I like to learn English every day</p>
+
+<button id="micBtn">🎤 Hablar</button>
+
+<div class="result">
+<p><strong>Tú dijiste:</strong></p>
+<p id="spokenText"></p>
+
+<p><strong>Puntuación:</strong></p>
+<p id="score"></p>
+<p id="feedback" style="font-size:1.2em; font-weight:bold;"></p>
+<div id="comparison"></div>
+
+<button onclick="retry()">🔁 Intentar otra vez</button>
+<button onclick="nextPhrase()">➡️ Siguiente frase</button>
+
+<select id="languageSelect">
+  <option value="en-US">🇺🇸 Inglés</option>
+  <option value="fr-FR">🇫🇷 Francés</option>
+  <option value="de-DE">🇩🇪 Alemán</option>
+</select>
+</div>
+
+</div>
+
 <script>
 const spokenText = document.getElementById("spokenText");
 const scoreText = document.getElementById("score");
@@ -89,3 +163,6 @@ function nextPhrase() {
   targetSentenceEl.innerText = phrases[phraseIndex];
 }
 </script>
+
+</body>
+</html>
